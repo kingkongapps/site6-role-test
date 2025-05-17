@@ -123,6 +123,31 @@ public class KeycloakUtil {
         return header.getAsString("kid");
     }
 
+    public static Object getClientRoles(String accessToken, String clientId) throws Exception {
+        if( accessToken == null ) return null;
+
+        // 1. 토큰을 . 으로 분리 (Header.Payload.Signature)
+        String[] parts = accessToken.split("\\.");
+        if (parts.length < 2) {
+            throw new IllegalArgumentException("잘못된 JWT 토큰 형식입니다.");
+        }
+        // 2. Payload 부분 Base64 디코딩
+        String payloadJson = new String(Base64.getUrlDecoder().decode(parts[1]));
+
+        // 3. JSON 파싱 (json-simple 사용)
+        JSONParser parser = new JSONParser();
+        JSONObject payload = (JSONObject) parser.parse(payloadJson);
+
+        // 4. resource_access 추출
+        JSONObject resourceAccess = (JSONObject) payload.get("resource_access");
+
+        // 5. client 추출
+        JSONObject roles = (JSONObject) resourceAccess.get(clientId);
+
+        // 6. roles 추출
+        return roles.get("roles");
+    }
+
     public static boolean isTokenExpired(String rptToken, PublicKey publicKey) {
         System.out.println("JwtUtil::isTokenExpired()::rptToken=" + rptToken);
         boolean isExpired = false;
